@@ -150,6 +150,56 @@ cdef class Dinic(Algorithm):
 		"""
 		return (<_Dinic*>(self._this)).getMaxFlow()
 
+# === Pseudoflow binding ======================================================
+
+cdef extern from "<networkit/flow/Pseudoflow.hpp>":
+
+	cdef cppclass _Pseudoflow "NetworKit::Pseudoflow"(_Algorithm):
+		_Pseudoflow(const _Graph &graph, node source, node sink) except +
+		edgeweight getMaxFlow() except +
+		vector[node] getSourceSet() except +
+		vector[node] getSinkSet() except +
+		vector[edgeid] getCutEdges() except +
+
+
+cdef class Pseudoflow(Algorithm):
+	"""
+	Pseudoflow(graph, source, sink)
+
+	Computes a maximum flow and minimum cut using the pseudoflow algorithm.
+	The input graph must have indexed edges and explicit reverse residual arcs.
+
+	Parameters
+	----------
+	graph : networkit.Graph
+		The input graph.
+	source : int
+		Source node identifier.
+	sink : int
+		Sink node identifier.
+	"""
+	cdef Graph _graph
+
+	def __cinit__(self, Graph graph not None, node source, node sink):
+		self._graph = graph
+		self._this = new _Pseudoflow(graph._this, source, sink)
+
+	def getMaxFlow(self):
+		"""Return the computed maximum-flow value."""
+		return (<_Pseudoflow*>(self._this)).getMaxFlow()
+
+	def getSourceSet(self):
+		"""Return the source side of a minimum cut."""
+		return (<_Pseudoflow*>(self._this)).getSourceSet()
+
+	def getSinkSet(self):
+		"""Return the sink side of a minimum cut."""
+		return (<_Pseudoflow*>(self._this)).getSinkSet()
+
+	def getCutEdges(self):
+		"""Return input edge IDs crossing the minimum cut."""
+		return (<_Pseudoflow*>(self._this)).getCutEdges()
+
 # === SuccessiveShortestPath (Min-Cost Flow) binding ==========================
 
 cdef extern from "<string_view>" namespace "std":
