@@ -50,6 +50,30 @@ inline bool vector_almost_equal(const Vector &lhs, const Vector &rhs) {
     return true;
 }
 
+TEST(LAMGRegressionTest, testSingleNodeEliminationOnDisconnectedGraph) {
+    constexpr count starSize = 201;
+    Graph G(starSize + 1);
+    for (node u = 1; u < starSize; ++u) {
+        G.addEdge(0, u);
+    }
+
+    const auto L = CSRMatrix::laplacianMatrix(G);
+    Vector rhs(G.numberOfNodes(), -1.0);
+    rhs[0] = starSize - 1;
+    rhs[starSize] = 0.0;
+    Vector result(G.numberOfNodes(), 0.0);
+
+    Lamg<CSRMatrix> lamg;
+    lamg.setup(L);
+    const auto status = lamg.solve(rhs, result);
+
+    EXPECT_EQ(result.getDimension(), G.numberOfNodes());
+    EXPECT_TRUE(vector_almost_equal(L * result, rhs));
+    EXPECT_TRUE(status.converged);
+    EXPECT_TRUE(std::isfinite(status.residual));
+    EXPECT_EQ(status.numIters, 0);
+}
+
 std::tuple<Graph, std::vector<Vector>> LAMGGTest::testData() const {
     auto [solveFn, setupFn, components, parallelism] = GetParam();
 

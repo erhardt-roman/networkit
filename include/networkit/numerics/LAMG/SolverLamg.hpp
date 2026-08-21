@@ -109,7 +109,16 @@ void SolverLamg<Matrix>::solve(Vector &x, const Vector &b, LAMGSolverStatus &sta
         if (hierarchy.getType(1) == ELIMINATION) {
             hierarchy.at(1).restrict(b, bc, bStages[1]);
             if (hierarchy.at(1).getLaplacian().numberOfRows() == 1) {
-                x = 0.0;
+                const double initialResidual =
+                    (b - hierarchy.at(0).getLaplacian() * x).length();
+                Vector coarseSolution(1, 0.0);
+                hierarchy.at(1).interpolate(coarseSolution, x, bStages[1]);
+
+                status.residual = (b - hierarchy.at(0).getLaplacian() * x).length();
+                status.residualHistory.emplace_back(status.residual);
+                status.numIters = 0;
+                status.converged =
+                    status.residual <= status.desiredResidualReduction * initialResidual;
                 return;
             } else {
                 hierarchy.at(1).coarseType(x, xc);
